@@ -1,72 +1,83 @@
 #!/bin/bash
+# arthur.lopes@tivit.com
+# versao 1.0 27/03/23
+# script para compactar e apagar arquivos antigos de archive, dump, logs etc
+# - apaga arquivos mais antigos que x dias (DAYS_TO_KEEP)
+# - compacta com gzip os arquivos restantes menos os x mais recentes (DAYS_NO_GZIP)
+# - nao executa se nenhum arquivo recente for encontrado para evitar que 
+# todos os arquivos acabem sendo apagados em caso de falha na criação dos arquivos
+# - não executa se o diretorio a ser tratado nao existir (TARGET_DIR)
+# - informa no log numeros de arquivos tratados, restantes e tamanho do diretorio
+
 
 # Numero de dias para manter os arquivos
 DAYS_TO_KEEP=8
 
-# Numero de dias sem gzip (zero conta como hoje)
+# Numero de dias sem gzip (zero conta como hoje - nao compacta o arquivo de hoje)
 DAYS_NO_GZIP=0
 
 # Numero de dias para considerar se ha arquivos gerados recentemente
 DAYS_TO_CHECK=1
 
-# Caminho completo dos arquivos a serem rotacionados
-LOG_DIR=/home/lopes/testes/teste2
+# Caminho completo do diretorio que sera tratado
+# ATENCAO - aqui ocorre gzip e rm -f
+TARGET_DIR=/home/lopes/testes/teste2
 
-# Definir o caminho completo para o arquivo de log deste script
+# Caminho completo para o arquivo de log deste script
 LOG_FILE=/home/lopes/log/file.log
 
-# Obter a data atual em formato Unix timestamp
+# Data atual em formato Unix timestamp
 CURRENT_DATE=$(date +%s)
 
-# Verificar se o diretório de logs existe
-if [ ! -d "$LOG_DIR" ]; then
-    echo "Diretório de logs não encontrado."
+# Verificar se o diretorio a ser tratado existe
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "Diretório para execucao nao encontrado."
     exit 1
 fi
 
-# Verificar condicoes iniciais
-LOG_FILES_SIZE=$(du -sh "$LOG_DIR")
-TOTAL_FILES=$(ls "$LOG_DIR"|wc -l)
+# Guardar condicoes iniciais
+LOG_FILES_SIZE=$(du -sh "$TARGET_DIR")
+TOTAL_FILES=$(ls "$TARGET_DIR"|wc -l)
 
 # Obter a data limite para logs recentes
 LIMIT_DATE=$(date -d "-$DAYS_TO_CHECK days" +%s)
 
-# Verificar se há logs gerados recentemente
-RECENT_LOGS=$(find "$LOG_DIR" -type f -name "*.log" -newermt "@$LIMIT_DATE" | wc -l)
+# Verificar se há arquivos gerados recentemente
+RECENT_LOGS=$(find "$TARGET_DIR" -type f -name "*.log" -newermt "@$LIMIT_DATE" | wc -l)
 if [ "$RECENT_LOGS" -eq 0 ]; then
     echo "Não há arquivos gerados nos ultimos $DAYS_TO_CHECK dias. Encerrando." >> "$LOG_FILE"
     exit 0
 fi
 
-# Obter a lista de arquivos de log no diretório com mais de X dias e não gzipados
-# - escolher o find mais apropriado
-#LOG_FILES=$(find "$LOG_DIR" -type f -name "*.log" -mtime +"$DAYS_TO_KEEP" ! -name "*.gz")
-LOG_FILES_TO_GZIP=$(find "$LOG_DIR" -type f -name "*.log" -mtime +"$DAYS_NO_GZIP")
+# Obter a lista de arquivos nao compactados no diretório sem contar os mais recentes (DAYS_NO_GZIP)
+# - escolher o find mais apropriado pela extensao ou negativa da extensao
+#LOG_FILES=$(find "$TARGET_DIR" -type f -name "*.log" -mtime +"$DAYS_TO_KEEP" ! -name "*.gz")
+LOG_FILES_TO_GZIP=$(find "$TARGET_DIR" -type f -name "*.log" -mtime +"$DAYS_NO_GZIP")
 
-# Verificar se há arquivos de log para gzipar
-NUM_LOG_FILES=$(echo "$LOG_FILES_TO_GZIP" | wc -l)
-if [ $NUM_LOG_FILES -eq 0 ]; then
+# Verificar se ha arquivos de log para compactar e executar compactacao caso positivo
+NUM_LOG_FILES_TO_GZIP=$(echo "$LOG_FILES_TO_GZIP" | wc -l)
+if [ $NUM_LOG_FILES_TO_GZIP -eq 0 ]; then
     echo "Não há arquivos para gzipar."
 else
-# gzipando
+# compactando
     echo "$LOG_FILES_TO_GZIP" | while read -r log_file; do
        if [ -f "$log_file" ]; then
            if gzip "$log_file"; then
 #               echo "$(date) - Arquivo $log_file gzipado." >> "$LOG_FILE"
                echo "$(date) - Arquivo $log_file gzipado." > /dev/null
            else
-               echo "$(date) - Falha ao gzipar o arquivo $log_file." >> "$LOG_FILE"
+               echo "$(date) - Falha ao compactar o arquivo $log_file." >> "$LOG_FILE"
            fi
        fi       
     done
-    echo "$(date) - Arquivos compactados." >> "$LOG_FILE"
+    echo "$(date) - $NUM_LOG_FILES_TO_GZIP Arquivos compactados." >> "$LOG_FILE"
 #    exit 0
 fi
 
-# Obter a lista de arquivos de log ipara excluir no diretório
-LOG_FILES_TO_DELETE=$(find "$LOG_DIR" -type f -mtime +"$DAYS_TO_KEEP")
+# Obter a lista de arquivos para excluir no diretorio
+LOG_FILES_TO_DELETE=$(find "$TARGET_DIR" -type f -mtime +"$DAYS_TO_KEEP")
 
-# Verificar se há arquivos de log suficientes para excluir
+# Verificar se ha arquivos para excluir e executar caso positivo
 NUM_LOG_FILES_TO_DELETE=$(echo "$LOG_FILES_TO_DELETE" | wc -l)
 if [ $NUM_LOG_FILES_TO_DELETE -eq 0 ]; then
     echo "Nao ha arquivos antigos para excluir." >> "$LOG_FILE"
@@ -81,20 +92,20 @@ else
             fi
         fi        
     done
-    echo "$(date) - Arquivos apagados." >> "$LOG_FILE"
+    echo "$(date) - $NUM_LOG_FILES_TO_DELETE Arquivos apagados." >> "$LOG_FILE"
 #    exit 0
 fi
 
 # Obter a lista atualizada de arquivos de log no diretório
-#UPDATED_LOG_FILES=$(find "$LOG_DIR" -type f -name "*.log" -mtime +"$DAYS_TO_KEEP" ! -name "*.gz")
+#UPDATED_LOG_FILES=$(find "$TARGET_DIR" -type f -name "*.log" -mtime +"$DAYS_TO_KEEP" ! -name "*.gz")
 UPDATED_LOG_FILES=$(ls)
 
 # Contar o número de arquivos de log atualizados
 NUM_UPDATED_LOG_FILES=$(echo "$UPDATED_LOG_FILES" | wc -l)
 
 # Verificar o tamanho total dos arquivos de log restantes:
-UPDATED_LOG_FILES_SIZE=$(du -sh "$LOG_DIR")
-UPDATED_TOTAL_FILES=$(ls "$LOG_DIR"|wc -l)
+UPDATED_LOG_FILES_SIZE=$(du -sh "$TARGET_DIR")
+UPDATED_TOTAL_FILES=$(ls "$TARGET_DIR"|wc -l)
 
 # Registrar o resultado da operação no arquivo de log
 echo "$(date) - Operação de exclusão/gzip de arquivos de log concluída." >> "$LOG_FILE"
