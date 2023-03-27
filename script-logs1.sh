@@ -57,9 +57,9 @@ else
            else
                echo "$(date) - Falha ao gzipar o arquivo $log_file." >> "$LOG_FILE"
            fi
-       fi
-       echo "$(date) - Arquivos compactados." >> "$LOG_FILE"
+       fi       
     done
+    echo "$(date) - Arquivos compactados." >> "$LOG_FILE"
 #    exit 0
 fi
 
@@ -79,10 +79,9 @@ else
             else
                 echo "$(date) - Falha ao apagar o arquivo $log_file." >> "$LOG_FILE"
             fi
-        fi
-        echo "$(date) - Arquivos apagados." >> "$LOG_FILE"
+        fi        
     done
-
+    echo "$(date) - Arquivos apagados." >> "$LOG_FILE"
 #    exit 0
 fi
 
