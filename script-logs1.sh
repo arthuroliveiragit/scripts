@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Numero de dias para manter os logs
+# Numero de dias para manter os arquivos
 DAYS_TO_KEEP=8
 
 # Numero de dias sem gzip (zero conta como 1)
