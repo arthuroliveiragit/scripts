@@ -3,13 +3,13 @@
 # Numero de dias para manter os arquivos
 DAYS_TO_KEEP=8
 
-# Numero de dias sem gzip (zero conta como 1)
+# Numero de dias sem gzip (zero conta como hoje)
 DAYS_NO_GZIP=0
 
-# Numero de dias para considerar se ha logs gerados recentemente
+# Numero de dias para considerar se ha arquivos gerados recentemente
 DAYS_TO_CHECK=1
 
-# Definir o caminho completo para o diretório de logs
+# Caminho completo dos arquivos a serem rotacionados
 LOG_DIR=/home/lopes/testes/teste2
 
 # Definir o caminho completo para o arquivo de log deste script
@@ -39,10 +39,11 @@ if [ "$RECENT_LOGS" -eq 0 ]; then
 fi
 
 # Obter a lista de arquivos de log no diretório com mais de X dias e não gzipados
+# - escolher o find mais apropriado
 #LOG_FILES=$(find "$LOG_DIR" -type f -name "*.log" -mtime +"$DAYS_TO_KEEP" ! -name "*.gz")
 LOG_FILES_TO_GZIP=$(find "$LOG_DIR" -type f -name "*.log" -mtime +"$DAYS_NO_GZIP")
 
-# Verificar se há arquivos de log suficientes para gzipar
+# Verificar se há arquivos de log para gzipar
 NUM_LOG_FILES=$(echo "$LOG_FILES_TO_GZIP" | wc -l)
 if [ $NUM_LOG_FILES -eq 0 ]; then
     echo "Não há arquivos para gzipar."
@@ -51,11 +52,13 @@ else
     echo "$LOG_FILES_TO_GZIP" | while read -r log_file; do
        if [ -f "$log_file" ]; then
            if gzip "$log_file"; then
-               echo "$(date) - Arquivo $log_file gzipado." >> "$LOG_FILE"
+#               echo "$(date) - Arquivo $log_file gzipado." >> "$LOG_FILE"
+               echo "$(date) - Arquivo $log_file gzipado." > /dev/null
            else
                echo "$(date) - Falha ao gzipar o arquivo $log_file." >> "$LOG_FILE"
            fi
        fi
+       echo "$(date) - Arquivos compactados." >> "$LOG_FILE"
     done
 #    exit 0
 fi
@@ -71,11 +74,13 @@ else
     echo "$LOG_FILES_TO_DELETE" | while read -r log_file; do
         if [ -f "$log_file" ]; then
             if rm -f "$log_file"; then
-                echo "$(date) - Arquivo $log_file apagado." >> "$LOG_FILE"
+#                echo "$(date) - Arquivo $log_file apagado." >> "$LOG_FILE"
+                echo "$(date) - Arquivo $log_file apagado." > /dev/null
             else
                 echo "$(date) - Falha ao apagar o arquivo $log_file." >> "$LOG_FILE"
             fi
         fi
+        echo "$(date) - Arquivos apagados." >> "$LOG_FILE"
     done
 
 #    exit 0
