@@ -1,7 +1,7 @@
 #!/bin/bash
 # arthur.lopes@tivit.com
 # versao 1.0 27/03/23
-# script para compactar e apagar arquivos antigos de archive, dump, logs etc
+# script para compactar e descartar arquivos antigos de archive, dump, logs etc
 # - apaga arquivos mais antigos que x dias (DAYS_TO_KEEP)
 # - compacta com gzip os arquivos restantes menos os x mais recentes (DAYS_NO_GZIP)
 # - nao executa se nenhum arquivo recente for encontrado para evitar que 
@@ -36,7 +36,7 @@ if [ ! -d "$TARGET_DIR" ]; then
 fi
 
 # Guardar condicoes iniciais
-LOG_FILES_SIZE=$(du -sh "$TARGET_DIR")
+FILES_SIZE=$(du -sh "$TARGET_DIR")
 TOTAL_FILES=$(ls "$TARGET_DIR"|wc -l)
 
 # Obter a data limite para logs recentes
@@ -75,14 +75,14 @@ else
 fi
 
 # Obter a lista de arquivos para excluir no diretorio
-LOG_FILES_TO_DELETE=$(find "$TARGET_DIR" -type f -mtime +"$DAYS_TO_KEEP")
+FILES_TO_DELETE=$(find "$TARGET_DIR" -type f -mtime +"$DAYS_TO_KEEP")
 
 # Verificar se ha arquivos para excluir e executar caso positivo
-NUM_LOG_FILES_TO_DELETE=$(echo "$LOG_FILES_TO_DELETE" | wc -l)
-if [ $NUM_LOG_FILES_TO_DELETE -eq 0 ]; then
+NUM_FILES_TO_DELETE=$(echo "$FILES_TO_DELETE" | wc -l)
+if [ $FILES_TO_DELETE -eq 0 ]; then
     echo "Nao ha arquivos antigos para excluir." >> "$LOG_FILE"
 else
-    echo "$LOG_FILES_TO_DELETE" | while read -r log_file; do
+    echo "$FILES_TO_DELETE" | while read -r log_file; do
         if [ -f "$log_file" ]; then
             if rm -f "$log_file"; then
 #                echo "$(date) - Arquivo $log_file apagado." >> "$LOG_FILE"
@@ -92,19 +92,12 @@ else
             fi
         fi        
     done
-    echo "$(date) - $NUM_LOG_FILES_TO_DELETE Arquivos apagados." >> "$LOG_FILE"
+    echo "$(date) - $NUM_FILES_TO_DELETE Arquivos apagados." >> "$LOG_FILE"
 #    exit 0
 fi
 
-# Obter a lista atualizada de arquivos de log no diretório
-#UPDATED_LOG_FILES=$(find "$TARGET_DIR" -type f -name "*.log" -mtime +"$DAYS_TO_KEEP" ! -name "*.gz")
-UPDATED_LOG_FILES=$(ls)
-
-# Contar o número de arquivos de log atualizados
-NUM_UPDATED_LOG_FILES=$(echo "$UPDATED_LOG_FILES" | wc -l)
-
-# Verificar o tamanho total dos arquivos de log restantes:
-UPDATED_LOG_FILES_SIZE=$(du -sh "$TARGET_DIR")
+# Verificar o tamanho total e quantidade dos arquivos restantes:
+UPDATED_FILES_SIZE=$(du -sh "$TARGET_DIR")
 UPDATED_TOTAL_FILES=$(ls "$TARGET_DIR"|wc -l)
 
 # Registrar o resultado da operação no arquivo de log
@@ -113,7 +106,7 @@ echo "Número de arquivos antes da operação: $TOTAL_FILES." >> "$LOG_FILE"
 #echo "Número de arquivos excluídos: $NUM_LOG_FILES_TO_DELETE." >> "$LOG_FILE"
 echo "Número de arquivos excluídos: $(expr $TOTAL_FILES - $UPDATED_TOTAL_FILES)." >> "$LOG_FILE"
 echo "Número de arquivos após a operação: $UPDATED_TOTAL_FILES." >> "$LOG_FILE"
-echo "Tamanho total dos arquivos antes: $LOG_FILES_SIZE." >> "$LOG_FILE"
-echo "Tamanho total dos arquivos atual: $UPDATED_LOG_FILES_SIZE." >> "$LOG_FILE"
+echo "Tamanho total dos arquivos antes: $FILES_SIZE." >> "$LOG_FILE"
+echo "Tamanho total dos arquivos atual: $UPDATED_FILES_SIZE." >> "$LOG_FILE"
 echo "--------------------------------------------------------------" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
