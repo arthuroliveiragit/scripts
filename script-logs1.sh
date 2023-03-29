@@ -79,7 +79,7 @@ FILES_TO_DELETE=$(find "$TARGET_DIR" -type f -mtime +"$DAYS_TO_KEEP")
 
 # Verificar se ha arquivos para excluir e executar caso positivo
 NUM_FILES_TO_DELETE=$(echo "$FILES_TO_DELETE" | wc -l)
-if [ $FILES_TO_DELETE -eq 0 ]; then
+if [ $NUM_FILES_TO_DELETE -eq 0 ]; then
     echo "Nao ha arquivos antigos para excluir." >> "$LOG_FILE"
 else
     echo "$FILES_TO_DELETE" | while read -r log_file; do
