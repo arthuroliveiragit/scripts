@@ -8,12 +8,15 @@
 # - gera log com as estatisticas
 
 
-
 #!/bin/bash
 
 # Definicao de variaveis de origem e destino
-origem=("/root/GIT/granjalog/logs1" "/root/GIT/granjalog/logs2" "/root/GIT/granjalog/logs3")
-destino=("/root/GIT/granjalog/destino1" "/root/GIT/granjalog/destino2" "/root/GIT/granjalog/destino3")
+origem=("/root/GIT/granjalog/logs1" \
+        "/root/GIT/granjalog/logs2" \
+        "/root/GIT/granjalog/logs3")
+destino=("/root/GIT/granjalog/destino1" \
+        "/root/GIT/granjalog/destino2" \
+        "/root/GIT/granjalog/destino3")
 
 
 # Criacao do log de registro desse script
@@ -30,8 +33,8 @@ do
         # Contadores zerados
         num_copiados=0
         num_excluidos=0
-            dir_origem=`echo ${origem[i]}`
-            dir_destino=`echo ${destino[i]}`
+        dir_origem=`echo ${origem[i]}`
+        dir_destino=`echo ${destino[i]}`
         # Verifica se os diretorios existem
         if [ ! -d $dir_origem ]; then
             echo "Diretorio de origem $dir_origem para execucao nao encontrado." >> $log_file
